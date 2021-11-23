@@ -22,18 +22,12 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-class Constants {
-    protected static final String DEFAULT_SCOPE = "examples";
-    protected static final String DEFAULT_STREAM_NAME = "ur";
-    protected static final String DEFAULT_CONTROLLER_URI = "tcp://127.0.0.1:9090";
-}
-
-class Worker {
+class Writer {
     private final String scope;
     private final String streamName;
     private final URI controllerURI;
 
-    public Worker(String scope, String streamName, URI controllerURI) {
+    public Writer(String scope, String streamName, URI controllerURI) {
         this.scope = scope;
         this.streamName = streamName;
         this.controllerURI = controllerURI;
@@ -112,8 +106,8 @@ public class PravegaWriter {
             System.exit(2);
         }
 
-        Worker worker = new Worker(scope, streamName, controllerURI);
-        worker.start(dataFilename);
+        Writer writer = new Writer(scope, streamName, controllerURI);
+        writer.start(dataFilename);
     }
 
     private static void printHelp(int errCode) {

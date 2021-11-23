@@ -53,12 +53,21 @@ task PravegaWriter(type: CreateStartScripts) {
     classpath = files(jar.archivePath) + sourceSets.main.runtimeClasspath
 }
 
+task PravegaReader(type: CreateStartScripts) {
+    mainClassName = 'ur.exec.PravegaReader'
+    outputDir = file('build/scripts')
+    applicationName = 'pravegaReader'
+    defaultJvmOpts = []
+    classpath = files(jar.archivePath) + sourceSets.main.runtimeClasspath
+}
+
 distributions {
     main {
         distributionBaseName = archivesBaseName
         contents {
             into('bin') {
                 from project.PravegaWriter
+                from project.PravegaReader
             }
             into('lib') {
                 from(jar)
