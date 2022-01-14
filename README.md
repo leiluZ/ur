@@ -1,6 +1,19 @@
 # ur
 Introduction
 
+# Prepare Environment
+> OS: ubuntu-20.04.3-desktop  
+
+> sudo apt install openssh-server  
+> sudo apt install git  
+> sudo apt install openjdk-11-jre-headless  
+> sudo apt install openjdk-11-jdk-headless  
+> sudo apt install maven  
+> sudo apt install net-tools  
+> sudo apt install tree  
+> sudo apt install python-is-python3  
+> sudo snap install intellij-idea-community --classic  
+
 # Repository Structure
 
 This repository includes 3 parts: (`materials`, `saDemo`, and `exercises`)
