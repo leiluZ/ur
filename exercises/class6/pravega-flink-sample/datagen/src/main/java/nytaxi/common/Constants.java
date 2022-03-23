@@ -12,7 +12,6 @@ package nytaxi.common;
 
 public class Constants {
 
-    public static final String TRIP_DATA = "yellow_tripdata_2018-01-segment.csv.gz";
     public static final String ZONE_LOOKUP_DATA = "taxi_zone_lookup.csv.gz";
 
     public static final String DEFAULT_SCOPE = "taxi";

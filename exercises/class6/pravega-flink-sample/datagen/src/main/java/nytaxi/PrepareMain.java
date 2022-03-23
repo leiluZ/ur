@@ -25,7 +25,6 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import java.io.IOException;
 import java.util.Map;
 
-import static nytaxi.common.Constants.TRIP_DATA;
 import static nytaxi.common.Constants.ZONE_LOOKUP_DATA;
 
 @Slf4j
@@ -62,7 +61,7 @@ public class PrepareMain extends AbstractHandler {
             return;
         }
 
-        TaxiDataSource taxiDataSource = new TaxiDataSource(TRIP_DATA, zoneLookupRecordMap);
+        TaxiDataSource taxiDataSource = new TaxiDataSource(zoneLookupRecordMap);
 
         DataStream<TripRecord> streamSource = env.addSource(taxiDataSource).name("source");
 

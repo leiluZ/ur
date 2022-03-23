@@ -21,7 +21,6 @@ https://s3.amazonaws.com/nyc-tlc/misc/taxi+_zone_lookup.csv
 ```
 
 ## 准备工作
-- `git clone https://github.com/fyang86/pravega-flink-sql-examples.git`
 - `docker-compose up -d`以启动docker-compose环境
 - 打开`localhost:18080`, 进入Zeppelin界面
 - 点击右上角`Interpreter`进入Interpreter设置
@@ -174,62 +173,4 @@ SELECT
 FROM
         (SELECT vendorId, pickupTime FROM TaxiRide4)
 GROUP BY vendorId, HOP (pickupTime, INTERVAL '5' MINUTE, INTERVAL '15' MINUTE);
-```
-
-### 实例5： Append流写入Pravega
-
-将查询指定窗口时间内最热门的目的地结果写入Pravega:
-```sql
-CREATE TABLE TaxiRide5 (
-    rideId INT,
-    vendorId INT,
-    pickupTime TIMESTAMP(3),
-    dropOffTime TIMESTAMP(3),
-    passengerCount INT,
-    tripDistance FLOAT,
-    startLocationId INT,
-    destLocationId INT,
-    startLocationBorough STRING,
-    startLocationZone STRING,
-    startLocationServiceZone STRING,
-    destLocationBorough STRING,
-    destLocationZone STRING,
-    destLocationServiceZone STRING,
-    WATERMARK FOR pickupTime AS pickupTime - INTERVAL '30' SECONDS
-) with (
-    'connector' = 'pravega',
-    'controller-uri' = 'tcp://pravega:9090',
-    'scope' = 'taxi',
-    'scan.execution.type' = 'streaming',
-    'scan.reader-group.name' = 'popular-dest',
-    'scan.streams' = 'trip',
-    'format' = 'json'
-);
-
-CREATE TABLE PopularDest (
-    destLocationId INT,
-    window_start TIMESTAMP(3),
-    window_end TIMESTAMP(3),
-    cnt INT
-) with (
-    'connector' = 'pravega',
-    'controller-uri' = 'tcp://pravega:9090',
-    'scope' = 'taxi',
-    'sink.stream' = 'popDest',
-    'format' = 'json'
-);
-
-INSERT INTO PopularDest
-SELECT
-    destLocationId, window_start, window_end, cnt
-FROM
-    (SELECT
-         destLocationId,
-         HOP_START(pickupTime, INTERVAL '5' MINUTE, INTERVAL '15' MINUTE) AS window_start,
-         HOP_END(pickupTime, INTERVAL '5' MINUTE, INTERVAL '15' MINUTE) AS window_end,
-         COUNT(destLocationId) AS cnt
-     FROM
-             (SELECT pickupTime, destLocationId FROM TaxiRide5)
-     GROUP BY destLocationId, HOP(pickupTime, INTERVAL '5' MINUTE, INTERVAL '15' MINUTE))
-WHERE cnt > 8;
 ```
