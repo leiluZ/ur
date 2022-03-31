@@ -1,0 +1,13 @@
+1. Code style
+     * name
+     * variable
+     * abstraction
+2. Multi-Thread
+     * Producer-Consumer model
+     * lock-unlock
+     * threads coordination
+3. Exception handling
+     * Y/N
+
+
+UT coverage / checkStyle

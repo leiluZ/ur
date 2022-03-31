@@ -65,7 +65,7 @@ class Writer {
                             // end of file
                             break;
                         }
-                        JsonParser.parse(event);
+                        // JsonParser.parse(event);
 
                         // write to Pravega streams
                         System.out.format("Writing message: '%s' to stream '%s / %s'%n", event, scope, streamName);
