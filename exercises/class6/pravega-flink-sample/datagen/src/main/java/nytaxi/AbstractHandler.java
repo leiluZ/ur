@@ -24,7 +24,6 @@ import java.net.URI;
 import static nytaxi.common.Constants.CREATE_STREAM;
 import static nytaxi.common.Constants.DEFAULT_CONTROLLER_URI;
 import static nytaxi.common.Constants.DEFAULT_NO_SEGMENTS;
-import static nytaxi.common.Constants.DEFAULT_POPDEST_STREAM;
 import static nytaxi.common.Constants.DEFAULT_SCOPE;
 import static nytaxi.common.Constants.DEFAULT_TRIP_STREAM;
 
@@ -33,14 +32,12 @@ public abstract class AbstractHandler {
 
     private final String scope;
     private final String tripStream;
-    private final String popDestStream;
     private final String controllerUri;
     private final boolean create;
 
     public AbstractHandler() {
         this.scope = DEFAULT_SCOPE;
         this.tripStream = DEFAULT_TRIP_STREAM;
-        this.popDestStream = DEFAULT_POPDEST_STREAM;
         this.controllerUri = DEFAULT_CONTROLLER_URI;
         this.create = CREATE_STREAM;
     }
@@ -53,7 +50,6 @@ public abstract class AbstractHandler {
 
     public void createStream() {
         Stream taxiStream = Stream.of(getScope(), getTripStream());
-        Stream popDestStream = Stream.of(getScope(), getPopDestStream());
         ClientConfig clientConfig = ClientConfig.builder().controllerURI(URI.create(getControllerUri())).build();
 
         StreamConfiguration streamConfiguration = StreamConfiguration.builder()
@@ -62,7 +58,6 @@ public abstract class AbstractHandler {
 
         Helper helper = new Helper();
         helper.createStream(taxiStream, clientConfig, streamConfiguration);
-        helper.createStream(popDestStream, clientConfig, streamConfiguration);
     }
 
     public StreamExecutionEnvironment getStreamExecutionEnvironment() {

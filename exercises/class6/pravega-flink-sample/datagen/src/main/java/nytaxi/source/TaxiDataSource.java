@@ -11,13 +11,6 @@
 
 package nytaxi.source;
 
-import io.pravega.client.ClientConfig;
-import io.pravega.client.EventStreamClientFactory;
-import io.pravega.client.stream.EventRead;
-import io.pravega.client.stream.EventStreamReader;
-import io.pravega.client.stream.ReaderConfig;
-import io.pravega.client.stream.ReinitializationRequiredException;
-import io.pravega.client.stream.impl.UTF8StringSerializer;
 import nytaxi.common.TripRecord;
 import nytaxi.common.ZoneLookup;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
@@ -25,55 +18,38 @@ import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URI;
 import java.util.Map;
-import java.util.UUID;
 import java.util.zip.GZIPInputStream;
-
-import static nytaxi.common.Constants.DEFAULT_CONTROLLER_URI;
-import static nytaxi.common.Constants.DEFAULT_SCOPE;
 
 public class TaxiDataSource implements SourceFunction<TripRecord> {
 
+    private final String tripDataFilePath;
     private final Map<Integer, ZoneLookup> zoneLookupRecordMap;
     private final long speedup = 1000L;
 
-    public TaxiDataSource(Map<Integer, ZoneLookup> zoneLookupRecordMap) {
+    public TaxiDataSource(String tripDataFilePath, Map<Integer, ZoneLookup> zoneLookupRecordMap) {
+        this.tripDataFilePath = tripDataFilePath;
         this.zoneLookupRecordMap = zoneLookupRecordMap;
     }
 
     @Override
     public void run(SourceContext<TripRecord> sourceContext) throws Exception {
 
-        final String readerGroup = UUID.randomUUID().toString().replace("-", "");
-        try (EventStreamClientFactory clientFactory = EventStreamClientFactory.withScope(DEFAULT_SCOPE,
-                ClientConfig.builder().controllerURI(URI.create(DEFAULT_CONTROLLER_URI)).build());
-             EventStreamReader<String> reader = clientFactory.createReader("reader",
-                     readerGroup,
-                     new UTF8StringSerializer(),
-                     ReaderConfig.builder().build())) {
+        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+        try (
+                InputStream is = classloader.getResourceAsStream(tripDataFilePath);
+                GZIPInputStream gzipInputStream = new GZIPInputStream(is);
+                BufferedReader reader = new BufferedReader(new InputStreamReader(gzipInputStream, "UTF-8"));
+        ) {
             int count = 0;
             String line;
             TripRecord tripRecord;
             boolean start = true;
             int rideId = 1;
             long startTime = System.nanoTime();
-            EventRead<String> event = null;
-            do {
+            while (reader.ready() && (line = reader.readLine()) != null) {
                 if (start) {
                     start = false;
-                    continue;
-                }
-
-                try {
-                    event = reader.readNextEvent(2000);
-                    if (event.getEvent() != null) {
-                        System.out.format("Read event '%s'%n", event.getEvent());
-                    }
-                    line = event.getEvent();
-                } catch (ReinitializationRequiredException e) {
-                    //There are certain circumstances where the reader needs to be reinitialized
-                    e.printStackTrace();
                     continue;
                 }
 
@@ -100,7 +76,7 @@ public class TaxiDataSource implements SourceFunction<TripRecord> {
                     startTime = endTime;
                     count = 0;
                 }
-            } while (event.getEvent() != null);
+            }
 
         }
     }
