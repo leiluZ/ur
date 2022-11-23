@@ -22,16 +22,12 @@ https://s3.amazonaws.com/nyc-tlc/misc/taxi+_zone_lookup.csv
 
 ## 准备工作
 - `docker-compose up -d`以启动docker-compose环境
-- 打开`localhost:18080`, 进入Zeppelin界面
-- 点击右上角`Interpreter`进入Interpreter设置
-- 搜索`flink`, 配置`FLINK_HOME`为`/opt/flink-1.13.1`并保存
-- 回到Zeppelin首页, Import the note `flink_sql_demo_notebook`
+- 打开`localhost:18080`, 进入Zeppelin界面, Zeppelin首页, Import the note `flink_sql_demo_notebook`
 - 执行`%flink.ssql show tables;`, 查看 Flink UI: `localhost:18081`是否工作
 - 进入`datagen`目录并执行`mvn install`，在Flink UI中提交之前所生成的jar包文件`datagen-0.1-jar-with-dependencies.jar`, 将数据注入Pravega
 
-### 实例1： 过滤
+### 实例：出租车公司希望实时分析得到当前里程大于20mile的行程数最多的区域（zone）,从而完成智能调度车辆
 
-查询里程大于60mile的行程：
 ```sql
 CREATE TABLE TaxiRide1 (
     rideId INT,
@@ -58,119 +54,8 @@ CREATE TABLE TaxiRide1 (
     'format' = 'json'
 );
 
-SELECT * FROM TaxiRide1 WHERE tripDistance > 60;
-```
-
-### 实例2：Group Aggregate
-
-查询每种乘客数量的行车事件数：
-```sql
-CREATE TABLE TaxiRide2 (
-    rideId INT,
-    vendorId INT,
-    pickupTime TIMESTAMP(3),
-    dropOffTime TIMESTAMP(3),
-    passengerCount INT,
-    tripDistance FLOAT,
-    startLocationId INT,
-    destLocationId INT,
-    startLocationBorough STRING,
-    startLocationZone STRING,
-    startLocationServiceZone STRING,
-    destLocationBorough STRING,
-    destLocationZone STRING,
-    destLocationServiceZone STRING
-) with (
-    'connector' = 'pravega',
-    'controller-uri' = 'tcp://pravega:9090',
-    'scope' = 'taxi',
-    'scan.execution.type' = 'streaming',
-    'scan.reader-group.name' = 'passenger-count',
-    'scan.streams' = 'trip',
-    'format' = 'json'
-);
-
-SELECT passengerCount, COUNT(*) AS cnt
-FROM TaxiRide2
-GROUP BY passengerCount;
-```
-
-### 实例3: Window Aggregate(滚动窗口)
-
-查询指定窗口时间内前往每个目的地的乘客数：
-```sql
-CREATE TABLE TaxiRide3 (
-    rideId INT,
-    vendorId INT,
-    pickupTime TIMESTAMP(3),
-    dropOffTime TIMESTAMP(3),
-    passengerCount INT,
-    tripDistance FLOAT,
-    startLocationId INT,
-    destLocationId INT,
-    startLocationBorough STRING,
-    startLocationZone STRING,
-    startLocationServiceZone STRING,
-    destLocationBorough STRING,
-    destLocationZone STRING,
-    destLocationServiceZone STRING,
-    WATERMARK FOR dropOffTime AS dropOffTime - INTERVAL '30' SECONDS
-) with (
-    'connector' = 'pravega',
-    'controller-uri' = 'tcp://pravega:9090',
-    'scope' = 'taxi',
-    'scan.execution.type' = 'streaming',
-    'scan.reader-group.name' = 'max-traveller',
-    'scan.streams' = 'trip',
-    'format' = 'json'
-);
-
-SELECT
-    destLocationZone,
-    TUMBLE_START (dropOffTime, INTERVAL '1' HOUR) as window_start,
-    TUMBLE_END (dropOffTime, INTERVAL '1' HOUR) as window_end,
-    count(passengerCount) as cnt
-FROM
-        (SELECT passengerCount, dropOffTime, destLocationZone FROM TaxiRide3)
-GROUP BY destLocationZone, TUMBLE (dropOffTime, INTERVAL '1' HOUR);
-```
-
-### 实例4：Window Aggregate(滑动窗口)
-
-查询指定窗口时间内最受欢迎的出租车供应商：
-```sql
-CREATE TABLE TaxiRide4 (
-    rideId INT,
-    vendorId INT,
-    pickupTime TIMESTAMP(3),
-    dropOffTime TIMESTAMP(3),
-    passengerCount INT,
-    tripDistance FLOAT,
-    startLocationId INT,
-    destLocationId INT,
-    startLocationBorough STRING,
-    startLocationZone STRING,
-    startLocationServiceZone STRING,
-    destLocationBorough STRING,
-    destLocationZone STRING,
-    destLocationServiceZone STRING,
-    WATERMARK FOR pickupTime AS pickupTime - INTERVAL '30' SECONDS
-) with (
-    'connector' = 'pravega',
-    'controller-uri' = 'tcp://pravega:9090',
-    'scope' = 'taxi',
-    'scan.execution.type' = 'streaming',
-    'scan.reader-group.name' = 'popular-vendor',
-    'scan.streams' = 'trip',
-    'format' = 'json'
-);
-
-SELECT
-    vendorId,
-    HOP_START (pickupTime, INTERVAL '5' MINUTE, INTERVAL '15' MINUTE) as window_start,
-    HOP_END (pickupTime, INTERVAL '5' MINUTE, INTERVAL '15' MINUTE) as window_end,
-    count(vendorId) as cnt
-FROM
-        (SELECT vendorId, pickupTime FROM TaxiRide4)
-GROUP BY vendorId, HOP (pickupTime, INTERVAL '5' MINUTE, INTERVAL '15' MINUTE);
+SELECT startLocationZone, COUNT(*) AS zoneCnt
+FROM TaxiRide1
+WHERE tripDistance > 20
+GROUP BY startLocationZone;
 ```
