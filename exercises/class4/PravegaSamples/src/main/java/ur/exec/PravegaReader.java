@@ -53,7 +53,7 @@ class Reader {
                     try {
                         event = reader.readNextEvent(READER_TIMEOUT_MS);
                         if (event.getEvent() != null) {
-                            System.out.format("Read event '%s'", event.getEvent());
+                            System.out.format("Read event '%s'\n", event.getEvent());
                         }
                     } catch (ReinitializationRequiredException e) {
                         //There are certain circumstances where the reader needs to be reinitialized
